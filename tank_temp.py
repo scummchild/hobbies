@@ -3,7 +3,6 @@ on a raspberry pi, saves to a mongo db, and
 then emails if the temp is too low"""
 
 import argparse
-import glob
 import smtplib
 import ssl
 import time
