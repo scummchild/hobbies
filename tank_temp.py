@@ -11,11 +11,6 @@ import tankdb.mongo_setup as mongo_setup
 from tankdb.tempreading import TempReading
 
 
-base_dir = '/sys/bus/w1/devices/'
-device_folder = glob.glob(base_dir + '28*')[0]
-device_file = device_folder + '/w1_slave'
-
-
 def parse_script_arguments():
     """Setting up the arguments passed into this script from the command line"""
     parser = argparse.ArgumentParser()
@@ -24,21 +19,25 @@ def parse_script_arguments():
         'reading_location',
         help='String of the location of the temperature sensor')
 
+    parser.add_argument(
+        'device_file',
+        help='Posix path to the file the temperature sensor writes to')
+
     return parser.parse_args()
 
 
-def read_temp_raw():
+def read_temp_raw(device_file):
     f = open(device_file, 'r')
     lines = f.readlines()
     f.close()
     return lines
 
 
-def read_temp():
-    lines = read_temp_raw()
+def read_temp(device_file):
+    lines = read_temp_raw(device_file)
     while lines[0].strip()[-3:] != 'YES':
         time.sleep(0.2)
-        lines = read_temp_raw()
+        lines = read_temp_raw(device_file)
     equals_pos = lines[1].find('t=')
     if equals_pos != -1:
         temp_string = lines[1][equals_pos+2:]
@@ -69,7 +68,7 @@ def main():
     min_f_temp = 70
 
     reading = TempReading()
-    reading.temp_c, reading.temp_f = read_temp()
+    reading.temp_c, reading.temp_f = read_temp(args.device_file)
     reading.reading_location = args.reading_location
     reading.save()
 
