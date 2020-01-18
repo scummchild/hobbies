@@ -1,5 +1,6 @@
 """Create a plot of the turtle tank temperatures every day"""
 import datetime
+from pathlib import Path
 
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -32,4 +33,6 @@ plt.gcf().axes[0].xaxis.set_major_formatter(xformatter)
 plt.title(f'Tank Temperatures {yesterday} to {today}')
 plt.legend(['Water Deg F', 'Basking Dock Deg F'])
 
-plt.savefig(f'./tank_graphs/{today}.png')
+file_path = Path(__file__)
+fig_parent = file_path.parent.joinpath('tank_graphs')
+plt.savefig(fig_parent.joinpath(f'{today}.png'))
