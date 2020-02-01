@@ -3,11 +3,10 @@ on a raspberry pi, saves to a mongo db, and
 then emails if the temp is too low"""
 
 import argparse
-import smtplib
-import ssl
 import time
 import tankdb.mongo_setup as mongo_setup
 from tankdb.tempreading import TempReading
+import email_helper
 
 
 def parse_script_arguments():
@@ -21,6 +20,26 @@ def parse_script_arguments():
     parser.add_argument(
         'device_file',
         help='Posix path to the file the temperature sensor writes to')
+
+    parser.add_argument(
+        'smtp_server',
+        help='The server for the mail service, e.g., smtp.gmail.com',
+        type=str)
+
+    parser.add_argument(
+        'sender_email',
+        help='The From email address',
+        type=str)
+
+    parser.add_argument(
+        'sender_email_password',
+        help='Password for the From email address',
+        type=str)
+
+    parser.add_argument(
+        'receiver_email',
+        help='The To email address',
+        type=str)
 
     return parser.parse_args()
 
@@ -44,35 +63,25 @@ def read_temp(device_file):
         temp_f = temp_c * 9.0 / 5.0 + 32.0
         return temp_c, round(temp_f, 3)
 
-
-def send_alert(temp):
-    port = 465  # For SSL
-    smtp_server = 'smtp.gmail.com'
-    sender_email = 'leahnardo.the.turtle@gmail.com'
-    receiver_email = 'greesha@gmail.com'
-    password = input('Type your password and press enter: ')
-    message = f'Subject: Alert! Turtle Tank Temp Too Low! ({temp}F)'
-
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message)
-
-
 def main():
-    args = parse_script_arguments()
+    script_args = parse_script_arguments()
 
     mongo_setup.global_init()
 
     min_f_temp = 70
 
     reading = TempReading()
-    reading.temp_c, reading.temp_f = read_temp(args.device_file)
-    reading.reading_location = args.reading_location
+    reading.temp_c, reading.temp_f = read_temp(script_args.device_file)
+    reading.reading_location = script_args.reading_location
     reading.save()
 
     if reading.temp_f < min_f_temp:
-        send_alert(reading.temp_f)
+        email_helper.send_email(
+            smtp_server=script_args.smtp_server,
+            sender_email=script_args.sender_email,
+            sender_email_password=script_args.sender_email_password,
+            receiver_email=script_args.receiver_email,
+            message_subject=f'Alert! Turtle Tank Temp Too Low! ({reading.temp_f}F)')
 
 
 if __name__ == "__main__":

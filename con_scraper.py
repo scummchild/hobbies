@@ -2,35 +2,58 @@
 to a saved set of guests in a Mongodb database.  New additions and cancellations
 are found"""
 
-import smtplib
-import ssl
+import argparse
 import sys
-
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 from requests_html import HTMLSession
 
 import condb.mongo_setup as mongo_setup
 from condb.guest import Guest
+import email_helper
 
 
-def send_alert(name, known_for, url, is_cancellation):
-    """Helper function to send email"""
-    port = 465  # For SSL
-    smtp_server = 'smtp.gmail.com'
-    sender_email = 'leahnardo.the.turtle@gmail.com'
-    receiver_email = 'greesha@gmail.com'
-    password = input('Type your password and press enter: ')
+def parse_script_arguments() -> argparse.Namespace:
+    """Using argparse on the arguments passed into this script from the command line"""
+    parser = argparse.ArgumentParser(
+        description='This script scrapes the galaxycon Minneapolis site and compares \
+            the result to a saved set of guests in a Mongodb database. \
+            New additions and cancellations are found',
+        fromfile_prefix_chars='@')
 
-    message = MIMEMultipart("alternative")
-    message["From"] = sender_email
-    message["To"] = receiver_email
+    parser.add_argument(
+        'smtp_server',
+        help='The server for the mail service, e.g., smtp.gmail.com',
+        type=str)
+
+    parser.add_argument(
+        'sender_email',
+        help='The From email address',
+        type=str)
+
+    parser.add_argument(
+        'sender_email_password',
+        help='Password for the From email address',
+        type=str)
+
+    parser.add_argument(
+        'receiver_email',
+        help='The To email address',
+        type=str)
+
+    return parser.parse_args()
+
+
+def send_alert(
+        script_args: argparse.Namespace,
+        name: str,
+        known_for: str,
+        url: str,
+        is_cancellation: bool):
+    """Helper function to determine how to call send_email"""
 
     if not is_cancellation:
-        message["Subject"] = f'GalaxyCon addition: {name}'
+        subject = f'GalaxyCon addition: {name}'
         text = f'{name} is known for {known_for}'
-
         html = f"""\
         <html>
         <body>
@@ -39,20 +62,25 @@ def send_alert(name, known_for, url, is_cancellation):
         </html>
         """
 
-        part1 = MIMEText(text, "plain")
-        part2 = MIMEText(html, "html")
-
-        message.attach(part1)
-        message.attach(part2)
     else:
-        message["Subject"] = f'GalaxyCon cancellation: {name}'
+        subject = f'GalaxyCon cancellation: {name}'
+        text = None
+        html = None
 
-    context = ssl.create_default_context()
-    with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-        server.login(sender_email, password)
-        server.sendmail(sender_email, receiver_email, message.as_string())
+    email_helper.send_email(
+        smtp_server=script_args.smtp_server,
+        sender_email=script_args.sender_email,
+        sender_email_password=script_args.sender_email_password,
+        receiver_email=script_args.receiver_email,
+        message_subject=subject,
+        message_plain_text=text,
+        message_html=html)
+
 
 def main():
+    # TODO: refactor into 3 pieces: get_current_guests, get_known_guests, compare_current_to_known
+    script_args = parse_script_arguments()
+
     session = HTMLSession()
     resp = session.get("https://galaxycon.com/minneapolis-guests/")
 
@@ -73,27 +101,36 @@ def main():
         web_guest_names.append(guest_name)
 
         if guest_name not in known_guest_names:
-            new_guest = Guest()
-            new_guest.name = guest_name
-            new_guest.known_for = guest_known_for
-            new_guest.url = guest_url
+            new_guest = Guest(
+                name=guest_name,
+                known_for=guest_known_for,
+                url=guest_url)
 
             print(f'New addition! {new_guest.name}, known for {new_guest.known_for}')
 
             new_guest.save()
 
-            send_alert(name=new_guest.name, known_for=new_guest.known_for,
-                    url=new_guest.url, is_cancellation=False)
+            send_alert(
+                script_args=script_args,
+                name=new_guest.name,
+                known_for=new_guest.known_for,
+                url=new_guest.url,
+                is_cancellation=False)
 
     cancellations = [g for g in known_guest_names if g not in web_guest_names]
 
     for cancelled_guest in cancellations:
-        send_alert(name=cancelled_guest, known_for=None,
-                url=None, is_cancellation=True)
+        send_alert(
+            script_args=script_args,
+            name=cancelled_guest,
+            known_for=None,
+            url=None,
+            is_cancellation=True)
 
         print(f'Oh no! {cancelled_guest} cancelled!')
 
         Guest.objects(name=cancelled_guest).delete()
+
 
 if __name__ == '__main__':
     main()
