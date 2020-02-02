@@ -11,7 +11,11 @@ import email_helper
 
 def parse_script_arguments():
     """Setting up the arguments passed into this script from the command line"""
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description='This script parses a temperature reading file \
+            on a raspberry pi, saves to a mongo db, and \
+            then emails if the temp is too low',
+        fromfile_prefix_chars='@')
 
     parser.add_argument(
         'reading_location',
