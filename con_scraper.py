@@ -7,7 +7,7 @@ import sys
 
 from requests_html import HTMLSession
 
-import condb.mongo_setup as mongo_setup
+from mongo_setup import mongo_init
 from condb.guest import Guest
 import email_helper
 
@@ -19,6 +19,16 @@ def parse_script_arguments() -> argparse.Namespace:
             the result to a saved set of guests in a Mongodb database. \
             New additions and cancellations are found',
         fromfile_prefix_chars='@')
+
+    parser.add_argument(
+        'db_host',
+        help='The host name / ip address for the con database server',
+        type=str)
+
+    parser.add_argument(
+        'db_name',
+        help='The name of the con database',
+        type=str)
 
     parser.add_argument(
         'smtp_server',
@@ -90,7 +100,7 @@ def main():
         print('Unable to scrape con website')
         sys.exit()
     else:
-        mongo_setup.global_init()
+        mongo_init(alias='core', name=script_args.db_name, host=script_args.db_host,)
         known_guest_names = [g.name for g in Guest.objects().only('name')]
         web_guest_names = []
 
