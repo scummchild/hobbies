@@ -1,13 +1,21 @@
 # Direct Dependencies
 autopep8==1.5
 pylint==2.4.4
+pytest==5.3.5
 
 # Secondary Dependencies
 astroid==2.3.3
+atomicwrites==1.3.0
+attrs==19.3.0
 colorama==0.4.3
 isort==4.3.21
 lazy-object-proxy==1.4.3
 mccabe==0.6.1
+more==itertools-8.2.0
+packaging==20.1
+pluggy==0.13.1
+py==1.8.1
 pycodestyle==2.5.0
 six==1.13.0
+wcwidth==0.1.8
 wrapt==1.11.2
