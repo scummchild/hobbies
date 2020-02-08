@@ -20,7 +20,7 @@ def parse_script_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description='This script scrapes the galaxycon Minneapolis site and compares \
             the result to a saved set of guests in a Mongodb database. \
-            New additions and cancellations are found',
+            New additions and cancellations modify the database and send an email',
         fromfile_prefix_chars='@')
 
     parser.add_argument(
