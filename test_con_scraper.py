@@ -93,4 +93,22 @@ def test_add_new_guests(setup_test_db, mocker):
 
 
 def test_delete_cancelled_guests(setup_test_db, mocker):
-    pass
+    known_guest, _ = setup_test_db
+
+    mocker.patch('email_helper.send_email')
+
+    con_scraper.delete_cancelled_guests(
+        cancelled_guests=set([known_guest.full_name]),
+        script_args=SCRIPT_EMAIL_ARGS)
+
+    deleted_db_guest = Guest.objects.filter(name=known_guest.full_name).first()
+
+    assert not deleted_db_guest
+
+    email_helper.send_email.assert_called_once_with(smtp_server='testserver@test.com',
+                                                    sender_email='testsender@test.com',
+                                                    sender_email_password='testpass',
+                                                    receiver_email='testreceive@test.com',
+                                                    message_subject='GalaxyCon cancellation: Jon Pertwee',
+                                                    message_plain_text=None,
+                                                    message_html=None)
