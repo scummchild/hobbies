@@ -54,11 +54,28 @@ def test_get_current_guests():
 def test_compare_current_to_known(setup_test_db):
     known_guest, new_guest = setup_test_db
 
+    #Checking that known only returns no changes
+    new_guests, cancelled_guests = con_scraper.compare_current_to_known(
+        {known_guest.full_name: None})
+
+    assert not new_guests
+    assert not cancelled_guests
+
     new_guests, cancelled_guests = con_scraper.compare_current_to_known(
         {new_guest.full_name: None})
 
     assert new_guests == set([new_guest.full_name])
     assert cancelled_guests == set([known_guest.full_name])
+
+    #Expecting this will create an empty collection to compare with
+    known_db_guest = Guest.objects.filter(name=known_guest.full_name).first()
+    known_db_guest.delete()
+
+    new_guests, cancelled_guests = con_scraper.compare_current_to_known(
+        {new_guest.full_name: None})
+
+    assert new_guests == set([new_guest.full_name])
+    assert cancelled_guests == set()
 
 
 def test_add_new_guests(setup_test_db, mocker):
