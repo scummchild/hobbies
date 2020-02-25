@@ -75,7 +75,7 @@ def test_compare_current_to_known(setup_test_db):
         {new_guest.full_name: None})
 
     assert new_guests == set([new_guest.full_name])
-    assert cancelled_guests == set()
+    assert not cancelled_guests
 
 
 def test_add_new_guests(setup_test_db, mocker):
