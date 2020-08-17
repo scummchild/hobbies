@@ -5,9 +5,8 @@ then show those values (press 1 to replace main tank water....alternate colors).
 '''
 
 from datetime import date
-from typing import cast
 
-from tankdb import mongo_setup as mongo_setup
+from tankdb import mongo_setup
 from tankdb.tankequipment import TankEquipment
 from tankdb.equipmentpart import EquipmentPart
 
@@ -16,10 +15,12 @@ mongo_setup.global_init()
 # parts_list = set(f'{equipment.name} {part.name}' for equipment in TankEquipment.objects()
 #     for part in equipment.parts)
 
-equipment_part_list = list(set((equipment.name, part.name) for equipment in TankEquipment.objects()
-    for part in equipment.parts))
+equipment_part_list = list(set((equipment.name, part.name)
+                               for equipment in TankEquipment.objects()
+                               for part in equipment.parts))
 
-menu_option_list =  {option_number: part for option_number, part in list(enumerate([f'{part[0]} {part[1]}' for part in equipment_part_list]))}
+menu_option_list = {option_number: part for option_number, part in list(
+    enumerate([f'{part[0]} {part[1]}' for part in equipment_part_list]))}
 
 # menu_options = {option_number: part for option_number,
 #     part in enumerate(parts_list)}
@@ -55,5 +56,3 @@ for part in reversed(equipment_found.parts):
         break
 
 equipment_found.save()
-
-
